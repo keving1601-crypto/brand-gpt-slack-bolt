@@ -1,0 +1,75 @@
+{
+  "mission": "Through world-class, championship instruction and a variety of classes, Gracie Trinity empowers all levels of students with a confidence and self-assurance that translates beyond the sport of jiu jitsu.",
+  "core_values": [
+    "We build better people first, then better athletes.",
+    "Jiu Jitsu is about respect first.",
+    "Gracie Trinity is a family."
+  ],
+  "daily_ops": {
+    "am": [
+      "Front desk open and clean; mats ready; music on; A/C check",
+      "Check voicemail/texts; return missed calls",
+      "Lead follow-ups: call/text overnight leads; confirm intros/trials",
+      "Inventory quick scan (tape, soap, rash guards); restock if needed"
+    ],
+    "midday": [
+      "Cleanliness sweep (bathrooms/mats/common areas)",
+      "Confirm tonight\u2019s instructors; kids class attendance list ready",
+      "Check churn risks: failed payments / no-shows; contact 3 at-risk"
+    ],
+    "pm": [
+      "Greet classes; take photos for social proof",
+      "Trial/intro conversions tracked; schedule follow-up lesson",
+      "End-of-day cleanup checklist completed; lockup"
+    ]
+  },
+  "kpis": {
+    "chris": {
+      "role": "Sales Manager",
+      "metrics": {
+        "New leads contacted (per day)": "15",
+        "Trials booked (per week)": "8",
+        "Enrollments (per week)": "5",
+        "48h follow-up completion rate": "90%",
+        "Pipeline notes updated (per day)": "Yes"
+      }
+    },
+    "dee": {
+      "role": "Front Desk Manager",
+      "metrics": {
+        "Front desk coverage": "100% scheduled",
+        "Missed calls returned": "Within 24h",
+        "Inventory restock": "2x/week",
+        "Cleanliness walkthroughs": "3/day",
+        "Member support tickets": "Same-day response"
+      }
+    },
+    "max": {
+      "role": "Admin Manager",
+      "metrics": {
+        "Billing issues resolved": "Within 48h",
+        "Member portal updates": "Weekly",
+        "Class schedule accuracy": "100%",
+        "Data backups": "Weekly",
+        "Reporting pack posted": "Fridays"
+      }
+    },
+    "ian": {
+      "role": "Admin/Content",
+      "metrics": {
+        "Reels published": "3/week",
+        "Blog posts formatted": "1/week",
+        "Email newsletter": "1/week",
+        "YouTube shorts": "2/week",
+        "Asset library tidy": "Weekly"
+      }
+    }
+  },
+  "checkin_questions": [
+    "Wins since last check-in",
+    "Top challenges / blockers",
+    "KPI numbers (paste or type)",
+    "Focus for next week",
+    "Help needed from Kevin"
+  ]
+}

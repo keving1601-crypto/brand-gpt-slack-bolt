@@ -1,6 +1,8 @@
-import 'dotenv/config';
-import { App } from '@slack/bolt';
-import OpenAI from 'openai';
+// app.js — CommonJS version for Brand GPT with OpenAI integration
+
+const { App } = require('@slack/bolt');
+const OpenAI = require('openai');
+require('dotenv').config();
 
 const {
   SLACK_BOT_TOKEN,
@@ -10,8 +12,13 @@ const {
   OPENAI_API_KEY
 } = process.env;
 
-if (!SLACK_BOT_TOKEN || !SLACK_SIGNING_SECRET || !SLACK_APP_TOKEN || !OPENAI_API_KEY) {
-  console.error('Missing required env vars'); process.exit(1);
+if (!SLACK_BOT_TOKEN || !SLACK_SIGNING_SECRET || !SLACK_APP_TOKEN) {
+  console.error('Missing Slack env vars (SLACK_BOT_TOKEN, SLACK_SIGNING_SECRET, SLACK_APP_TOKEN).');
+  process.exit(1);
+}
+if (!OPENAI_API_KEY) {
+  console.error('Missing OPENAI_API_KEY.');
+  process.exit(1);
 }
 
 const app = new App({
@@ -23,37 +30,48 @@ const app = new App({
 
 const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
-// --- DM handler (full Brand GPT brain) ---
+async function safePost(client, args) {
+  try { return await client.chat.postMessage(args); } catch (e) { console.error(e); }
+}
+async function safeUpdate(client, args) {
+  try { return await client.chat.update(args); } catch (e) { console.error(e); }
+}
+
+// --- DM Handler ---
 app.event('message', async ({ event, client, logger }) => {
   if (event.subtype === 'bot_message') return;
-  if (event.channel_type !== 'im') return; // only DMs here
+  if (event.channel_type !== 'im') return;
 
-  const text = (event.text || '').trim();
+  const textRaw = event.text || '';
+  const text = textRaw.trim();
   const lower = text.toLowerCase();
-  logger.info(`DM received: "${text}" from ${event.user}`);
+  logger.info(`DM received from ${event.user}: "${text}"`);
 
-  // Quick answers (fast path)
+  // Quick test
+  if (lower === 'ping') {
+    await safePost(client, { channel: event.channel, text: 'BRAND-OK-123' });
+    return;
+  }
+
+  // Quick link replies
   if (lower.includes('leg lock')) {
-    await client.chat.postMessage({
+    await safePost(client, {
       channel: event.channel,
       text: 'Leglocks for Dummies: https://leglocks.unclecoachkevin.com/'
     });
     return;
   }
 
-  if (lower.includes('skool') || lower.includes('intro curriculum') || lower.includes('videos')) {
-    await client.chat.postMessage({
+  if (lower.includes('skool') || lower.includes('videos') || lower.includes('intro curriculum')) {
+    await safePost(client, {
       channel: event.channel,
-      text: 'Skool (free intro + $15/mo full videos): https://www.skool.com/gracie-trinity-academy'
+      text: 'Skool (free intro + $15/mo full class videos): https://www.skool.com/gracie-trinity-academy'
     });
     return;
   }
 
-  // Optional: show a quick “thinking” message, then edit it with the final reply
-  const placeholder = await client.chat.postMessage({
-    channel: event.channel,
-    text: 'Thinking…'
-  });
+  // GPT Thinking placeholder
+  const placeholder = await safePost(client, { channel: event.channel, text: 'Thinking…' });
 
   try {
     const completion = await openai.chat.completions.create({
@@ -61,12 +79,11 @@ app.event('message', async ({ event, client, logger }) => {
       messages: [
         {
           role: 'system',
-          content:
-            `You are Brand GPT, Kevin's assistant for the Gracie Trinity Academy brand.
-             Be concise, friendly, and useful. When relevant, include short CTAs with links:
-             - Leg lock course: https://leglocks.unclecoachkevin.com/
-             - Skool community & class videos: https://www.skool.com/gracie-trinity-academy
-             If asked about prices, schedules, or policies, answer clearly and offer next steps.`
+          content: `You are ${BOT_NAME === 'brand' ? 'Brand GPT' : 'Gracie Trinity GPT'}, Kevin’s assistant for Gracie Trinity Academy.
+Be concise, friendly, and helpful. When relevant, include short CTAs with links:
+- Leg lock course: https://leglocks.unclecoachkevin.com/
+- Skool community & class videos: https://www.skool.com/gracie-trinity-academy
+If asked about prices, schedules, or policies, answer clearly and offer next steps.`
         },
         { role: 'user', content: text }
       ],
@@ -74,30 +91,33 @@ app.event('message', async ({ event, client, logger }) => {
       max_tokens: 600
     });
 
-    const reply = completion.choices?.[0]?.message?.content?.trim() || "I couldn't find that—mind rephrasing?";
-    await client.chat.update({
-      channel: event.channel,
-      ts: placeholder.ts,
-      text: reply
-    });
+    const reply = completion?.choices?.[0]?.message?.content?.trim()
+      || "I couldn’t find that—mind rephrasing?";
+    if (placeholder?.ts) {
+      await safeUpdate(client, { channel: event.channel, ts: placeholder.ts, text: reply });
+    } else {
+      await safePost(client, { channel: event.channel, text: reply });
+    }
   } catch (err) {
-    logger.error(err);
-    await client.chat.update({
-      channel: event.channel,
-      ts: placeholder.ts,
-      text: 'Sorry—my brain hiccupped. Try again in a moment.'
-    });
+    logger.error('OpenAI error:', err);
+    const fallback = 'Sorry—my brain hiccupped. Try again in a moment.';
+    if (placeholder?.ts) {
+      await safeUpdate(client, { channel: event.channel, ts: placeholder.ts, text: fallback });
+    } else {
+      await safePost(client, { channel: event.channel, text: fallback });
+    }
   }
 });
 
-// --- Channel @mentions: steer people to DM (or answer briefly) ---
+// --- Channel @mentions ---
 app.event('app_mention', async ({ event, client }) => {
-  await client.chat.postMessage({
+  await safePost(client, {
     channel: event.channel,
-    text: `Hey <@${event.user}>—DM me for full help. Try “leg lock course” or ask me anything about Gracie Trinity.`
+    text: `Hey <@${event.user}> — DM me for full help. Try “leg lock course” or ask me anything about Gracie Trinity.`
   });
 });
 
+// --- Start App ---
 (async () => {
   await app.start();
   console.log(`⚡ ${BOT_NAME} Slack bot running in Socket Mode`);

@@ -1,14 +1,19 @@
-// app.js — CommonJS version for Brand GPT with OpenAI integration
+// app.js — ESM version (works when package.json has "type":"module")
 
-const { App } = require('@slack/bolt');
-const OpenAI = require('openai');
-require('dotenv').config();
+import 'dotenv/config';
+
+// @slack/bolt is CommonJS; import the default and pull { App } off it.
+import boltPkg from '@slack/bolt';
+const { App } = boltPkg;
+
+// OpenAI SDK (ESM)
+import OpenAI from 'openai';
 
 const {
   SLACK_BOT_TOKEN,
   SLACK_SIGNING_SECRET,
   SLACK_APP_TOKEN,
-  BOT_NAME = 'brand',
+  BOT_NAME = 'brand',        // set to 'brand' or 'gracie' per Render service
   OPENAI_API_KEY
 } = process.env;
 
@@ -37,40 +42,30 @@ async function safeUpdate(client, args) {
   try { return await client.chat.update(args); } catch (e) { console.error(e); }
 }
 
-// --- DM Handler ---
+// --- DMs ---
 app.event('message', async ({ event, client, logger }) => {
   if (event.subtype === 'bot_message') return;
   if (event.channel_type !== 'im') return;
 
-  const textRaw = event.text || '';
-  const text = textRaw.trim();
+  const text = (event.text || '').trim();
   const lower = text.toLowerCase();
   logger.info(`DM received from ${event.user}: "${text}"`);
 
-  // Quick test
   if (lower === 'ping') {
     await safePost(client, { channel: event.channel, text: 'BRAND-OK-123' });
     return;
   }
 
-  // Quick link replies
   if (lower.includes('leg lock')) {
-    await safePost(client, {
-      channel: event.channel,
-      text: 'Leglocks for Dummies: https://leglocks.unclecoachkevin.com/'
-    });
+    await safePost(client, { channel: event.channel, text: 'Leglocks for Dummies: https://leglocks.unclecoachkevin.com/' });
     return;
   }
 
   if (lower.includes('skool') || lower.includes('videos') || lower.includes('intro curriculum')) {
-    await safePost(client, {
-      channel: event.channel,
-      text: 'Skool (free intro + $15/mo full class videos): https://www.skool.com/gracie-trinity-academy'
-    });
+    await safePost(client, { channel: event.channel, text: 'Skool (free intro + $15/mo full class videos): https://www.skool.com/gracie-trinity-academy' });
     return;
   }
 
-  // GPT Thinking placeholder
   const placeholder = await safePost(client, { channel: event.channel, text: 'Thinking…' });
 
   try {
@@ -109,7 +104,7 @@ If asked about prices, schedules, or policies, answer clearly and offer next ste
   }
 });
 
-// --- Channel @mentions ---
+// --- @mentions in channels ---
 app.event('app_mention', async ({ event, client }) => {
   await safePost(client, {
     channel: event.channel,
@@ -117,7 +112,6 @@ app.event('app_mention', async ({ event, client }) => {
   });
 });
 
-// --- Start App ---
 (async () => {
   await app.start();
   console.log(`⚡ ${BOT_NAME} Slack bot running in Socket Mode`);

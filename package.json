@@ -2,15 +2,16 @@
   "name": "brand-gpt-slack-bolt",
   "version": "1.0.0",
   "description": "Slack bot for Brand GPT using OpenAI and Slack Bolt",
-  "main": "app.js",
+  "main": "main/app.js",
   "type": "module",
   "scripts": {
-    "start": "node app.js"
+    "start": "node main/app.js"
   },
   "dependencies": {
     "@slack/bolt": "^3.17.1",
     "dotenv": "^16.3.1",
-    "openai": "^4.0.0"
+    "openai": "^4.0.0",
+    "express": "^4.19.0"
   }
 }
 
